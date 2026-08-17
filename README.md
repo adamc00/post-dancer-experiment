@@ -1,30 +1,17 @@
-Dockerized Dancer2 app
+# Test submit and redirect workflow
 
-This repository contains a minimal Dancer2 application packaged in Docker. It exposes a POST endpoint at /submit that accepts JSON or form-encoded data and echoes it back.
+Expose a root page at / that renders a styled HTML form, a /success page, and a POST endpoint at /submit that accepts JSON or form data and redirects to /test with a 303 "See Other" response after a successful submission.
 
-Build and run with Docker:
+The app is a PSGI app (app.psgi) using Dancer2, with HTML pages rendered via send_as html and JSON content returned explicitly for the app root when needed.
 
-  # Build image
-  docker build -t dancer-app .
+```shell
+docker compose up
+```
 
-  # Run container
-  docker run --rm -p 3000:3000 dancer-app
+Visit [http://localhost:3000/]
 
-Or with Docker Compose (modern CLI: "docker compose"):
+## POST JSON
 
-  docker compose up --build
-  # or, if using the legacy docker-compose binary:
-  # docker-compose up --build
-
-Notes:
-- The included compose.yaml uses the modern Compose spec (no top-level "version" key), adds a healthcheck, restart policy, and a development bind-mount. Remove the bind-mount in production if you want the container to use the image's filesystem only.
-
-Test the endpoint:
-
-  # Health-check
-  curl http://localhost:3000/
-
-  # POST JSON
-  curl -X POST -H "Content-Type: application/json" -d '{"name":"Alice"}' http://localhost:3000/submit
-
-The app is a PSGI app (app.psgi) and uses Dancer2 with JSON serializer.
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Alice"}' http://localhost:3000/submit
+```

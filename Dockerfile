@@ -1,7 +1,5 @@
 FROM perl:5.36-slim
 
-ENV PLACK_ENV production
-
 # Install build tools and cpanminus
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

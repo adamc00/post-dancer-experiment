@@ -101,7 +101,7 @@ get '/' => sub {
 };
 
 # Success page for the test endpoint.
-get '/test' => sub {
+get '/success' => sub {
     my $content = qq{
       <div class="badge">✓</div>
       <h1>Success!</h1>
@@ -122,7 +122,7 @@ post '/submit' => sub {
     }
 
     # Successful POSTs redirect to the success page as a see-other redirect.
-    redirect '/test?name=' . $data->{name}, 303;
+    redirect '/success?name=' . $data->{name}, 303;
 };
 
 dance;
