@@ -97,7 +97,6 @@ my $render_page = sub {
 </html>};
 };
 
-# Root page with the HTML test form.
 get '/' => sub {
    my $content = qq{
 <div class="badge">→</div>
@@ -111,7 +110,6 @@ get '/' => sub {
    return send_as html => $render_page->('Test Submit', $content);
 };
 
-# Success page for the test endpoint.
 get '/success' => sub {
    my $data = params() || {};
    my $name = $escape_html->($data->{name});
