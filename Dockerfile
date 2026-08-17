@@ -17,9 +17,6 @@ WORKDIR /app
 COPY cpanfile /app/
 RUN cpanm --quiet --notest --installdeps .
 
-# Copy app
-COPY app.psgi /app/
-
 EXPOSE 3000
 
 CMD ["plackup", "-p", "3000", "-o", "0.0.0.0", "app.psgi"]
