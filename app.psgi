@@ -2,8 +2,11 @@ use strict;
 use warnings;
 use Dancer2;
 use HTML::Entities qw(encode_entities);
-use JSON::MaybeXS ();  # use fully-qualified calls to avoid prototype/import conflicts in embedded env
+use Cpanel::JSON::XS ();  # use fully-qualified object to avoid prototype/import conflicts in embedded env
 use URI::Escape qw(uri_escape_utf8);
+
+# JSON codec instance
+my $json_codec = Cpanel::JSON::XS->new->utf8->allow_nonref;
 
 my $escape_html = sub {
     my ($value) = @_;
@@ -132,11 +135,11 @@ post '/submit' => sub {
        my $body = request->body || '';
        if (length $body) {
            my $decoded;
-           eval { $decoded = JSON::MaybeXS::decode_json($body); 1 };
+           eval { $decoded = $json_codec->decode($body); 1 };
            if ($@) {
                status 400;
                content_type 'application/json';
-               return JSON::MaybeXS::encode_json({ error => 'invalid_json', message => "JSON parse error: $@" });
+               return $json_codec->encode({ error => 'invalid_json', message => "JSON parse error: $@" });
            }
            # Ensure $data is a hashref for downstream usage; if JSON is a non-object, wrap it.
            $data = (ref $decoded eq 'HASH') ? $decoded : { value => $decoded };

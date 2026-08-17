@@ -1,4 +1,4 @@
 requires 'Dancer2', '0';
 requires 'Plack';
-requires 'JSON::MaybeXS';
+requires 'Cpanel::JSON::XS';
 requires 'HTML::Entities';
