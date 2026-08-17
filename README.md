@@ -1,8 +1,8 @@
 # Test submit and redirect workflow
 
-Expose a root page at / that renders a styled HTML form, a /success page, and a POST endpoint at /submit that accepts JSON or form data and redirects to /test with a 303 "See Other" response after a successful submission.
+Expose a root page at `/` that renders a HTML form, a `/success` page, and a `POST` endpoint at `/submit` that accepts JSON or form data and redirects to `/success` with a 303 "See Other" response on success. Test post data is included in the redirect URL.
 
-The app is a PSGI app (app.psgi) using Dancer2, with HTML pages rendered via send_as html and JSON content returned explicitly for the app root when needed.
+The app is a PSGI app (app.psgi) using Dancer2.
 
 ```shell
 docker compose up
