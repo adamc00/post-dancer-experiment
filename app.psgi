@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Dancer2;
+use JSON::MaybeXS ();  # use fully-qualified calls to avoid prototype/import conflicts in embedded env
 
 my $shared_css = q{
   :root {
@@ -93,7 +94,7 @@ get '/' => sub {
       <h1>Submit test</h1>
       <p>Send a quick sample submission to the server.</p>
       <form action="/submit" method="post">
-        <input type="hidden" name="name" value="test">
+        <input type="text" name="name" value="test">
         <button type="submit">Submit test</button>
       </form>
     };
@@ -102,10 +103,14 @@ get '/' => sub {
 
 # Success page for the test endpoint.
 get '/success' => sub {
+
+    my $data = params() || {};
+
     my $content = qq{
       <div class="badge">✓</div>
       <h1>Success!</h1>
       <p>Your test submission was accepted and redirected correctly.</p>
+      <p>name = $data->{name}</p>
       <a href="/">Back to form</a>
     };
     return send_as html => $render_page->('Success', $content);
@@ -116,7 +121,20 @@ post '/submit' => sub {
     my $data;
 
     if (request->content_type && request->content_type =~ /json/i) {
-        $data = request->data // {};
+        my $body = request->body || '';
+        if (length $body) {
+            my $decoded;
+            eval { $decoded = JSON::MaybeXS::decode_json($body); 1 };
+            if ($@) {
+                status 400;
+                content_type 'application/json';
+                return JSON::MaybeXS::encode_json({ error => 'invalid_json', message => "JSON parse error: $@" });
+            }
+            # Ensure $data is a hashref for downstream usage; if JSON is a non-object, wrap it.
+            $data = (ref $decoded eq 'HASH') ? $decoded : { value => $decoded };
+        } else {
+            $data = {};
+        }
     } else {
         $data = params() || {};
     }
