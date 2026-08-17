@@ -87,6 +87,18 @@ my $render_page = sub {
 </html>};
 };
 
+# Simple HTML escape helper to avoid XSS when interpolating user-provided data.
+my $escape_html = sub {
+    my ($s) = @_;
+    return '' unless defined $s;
+    $s =~ s/&/&amp;/g;
+    $s =~ s/</&lt;/g;
+    $s =~ s/>/&gt;/g;
+    $s =~ s/"/&quot;/g;
+    $s =~ s/'/&#39;/g;
+    return $s;
+};
+
 # Root page with the HTML test form.
 get '/' => sub {
     my $content = qq{
@@ -104,13 +116,14 @@ get '/' => sub {
 # Success page for the test endpoint.
 get '/success' => sub {
 
-    my $data = params() || {};
+    my $raw_name = params->{name} // '';
+    my $name = $escape_html->($raw_name);
 
     my $content = qq{
       <div class="badge">✓</div>
       <h1>Success!</h1>
       <p>Your test submission was accepted and redirected correctly.</p>
-      <p>name = $data->{name}</p>
+      <p><strong>name:</strong> $name</p>
       <a href="/">Back to form</a>
     };
     return send_as html => $render_page->('Success', $content);
