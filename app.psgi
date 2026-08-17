@@ -1,7 +1,15 @@
 use strict;
 use warnings;
 use Dancer2;
+use HTML::Entities qw(encode_entities);
 use JSON::MaybeXS ();  # use fully-qualified calls to avoid prototype/import conflicts in embedded env
+use URI::Escape qw(uri_escape_utf8);
+
+my $escape_html = sub {
+    my ($value) = @_;
+    return '' unless defined $value;
+    return encode_entities($value, q{&<>"'});
+};
 
 my $shared_css = q{
   :root {
@@ -71,12 +79,14 @@ my $shared_css = q{
 };
 
 my $render_page = sub {
-    my ($title, $inner_html) = @_;
-    return qq{<!DOCTYPE html>
+   my ($title, $inner_html) = @_;
+   my $escaped_title = $escape_html->($title);
+
+   return qq{<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>$title</title>
+    <title>$escaped_title</title>
     <style>$shared_css</style>
   </head>
   <body>
@@ -87,74 +97,61 @@ my $render_page = sub {
 </html>};
 };
 
-# Simple HTML escape helper to avoid XSS when interpolating user-provided data.
-my $escape_html = sub {
-    my ($s) = @_;
-    return '' unless defined $s;
-    $s =~ s/&/&amp;/g;
-    $s =~ s/</&lt;/g;
-    $s =~ s/>/&gt;/g;
-    $s =~ s/"/&quot;/g;
-    $s =~ s/'/&#39;/g;
-    return $s;
-};
-
 # Root page with the HTML test form.
 get '/' => sub {
-    my $content = qq{
-      <div class="badge">→</div>
-      <h1>Submit test</h1>
-      <p>Send a quick sample submission to the server.</p>
-      <form action="/submit" method="post">
-        <input type="text" name="name" value="test">
-        <button type="submit">Submit test</button>
-      </form>
-    };
-    return send_as html => $render_page->('Test Submit', $content);
+   my $content = qq{
+<div class="badge">→</div>
+<h1>Submit test</h1>
+<p>Send a quick sample submission to the server.</p>
+<form action="/submit" method="post">
+       <input type="text" name="name" value="test">
+       <button type="submit">Submit test</button>
+</form>
+   };
+   return send_as html => $render_page->('Test Submit', $content);
 };
 
 # Success page for the test endpoint.
 get '/success' => sub {
+   my $data = params() || {};
+   my $name = $escape_html->($data->{name});
 
-    my $raw_name = params->{name} // '';
-    my $name = $escape_html->($raw_name);
-
-    my $content = qq{
-      <div class="badge">✓</div>
-      <h1>Success!</h1>
-      <p>Your test submission was accepted and redirected correctly.</p>
-      <p><strong>name:</strong> $name</p>
-      <p>name = $name</p>
-      <a href="/">Back to form</a>
-    };
-    return send_as html => $render_page->('Success', $content);
+   my $content = qq{
+<div class="badge">✓</div>
+<h1>Success!</h1>
+<p>Your test submission was accepted and redirected correctly.</p>
+<p>name = $name</p>
+<a href="/">Back to form</a>
+   };
+   return send_as html => $render_page->('Success', $content);
 };
 
 # Accept POSTs with JSON or form data at /submit
 post '/submit' => sub {
-    my $data;
+   my $data;
 
-    if (request->content_type && request->content_type =~ /json/i) {
-        my $body = request->body || '';
-        if (length $body) {
-            my $decoded;
-            eval { $decoded = JSON::MaybeXS::decode_json($body); 1 };
-            if ($@) {
-                status 400;
-                content_type 'application/json';
-                return JSON::MaybeXS::encode_json({ error => 'invalid_json', message => "JSON parse error: $@" });
-            }
-            # Ensure $data is a hashref for downstream usage; if JSON is a non-object, wrap it.
-            $data = (ref $decoded eq 'HASH') ? $decoded : { value => $decoded };
-        } else {
-            $data = {};
-        }
-    } else {
-        $data = params() || {};
-    }
+   if (request->content_type && request->content_type =~ /json/i) {
+       my $body = request->body || '';
+       if (length $body) {
+           my $decoded;
+           eval { $decoded = JSON::MaybeXS::decode_json($body); 1 };
+           if ($@) {
+               status 400;
+               content_type 'application/json';
+               return JSON::MaybeXS::encode_json({ error => 'invalid_json', message => "JSON parse error: $@" });
+           }
+           # Ensure $data is a hashref for downstream usage; if JSON is a non-object, wrap it.
+           $data = (ref $decoded eq 'HASH') ? $decoded : { value => $decoded };
+       } else {
+           $data = {};
+       }
+   } else {
+       $data = params() || {};
+   }
 
-    # Successful POSTs redirect to the success page as a see-other redirect.
-    redirect '/success?name=' . $data->{name}, 303;
+   # Successful POSTs redirect to the success page as a see-other redirect.
+   my $name = defined $data->{name} ? $data->{name} : '';
+   redirect '/success?name=' . uri_escape_utf8($name), 303;
 };
 
 dance;
