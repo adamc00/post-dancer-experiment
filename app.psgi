@@ -124,6 +124,7 @@ get '/success' => sub {
       <h1>Success!</h1>
       <p>Your test submission was accepted and redirected correctly.</p>
       <p><strong>name:</strong> $name</p>
+      <p>name = $name</p>
       <a href="/">Back to form</a>
     };
     return send_as html => $render_page->('Success', $content);
