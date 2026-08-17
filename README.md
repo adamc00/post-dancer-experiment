@@ -8,7 +8,7 @@ The app is a PSGI app (app.psgi) using Dancer2.
 docker compose up
 ```
 
-Visit [http://localhost:3000/]
+Visit <http://localhost:3000/>
 
 ## POST JSON
 
